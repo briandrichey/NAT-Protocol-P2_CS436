@@ -1,3 +1,5 @@
+
+
 from scapy.packet import Packet
 from scapy.layers.inet import TCP, IP, Ether, ICMP
 
@@ -22,4 +24,16 @@ def process_pkt_private(pkt: Packet):
             
 #ping[172.16.20.100] tests client 1 and 2
 
-  
+import threading
+def main():
+    thread1 = threading.Thread(target=private_listener)
+    thread2 = threading.Thread(target=public_listener)
+    thread1.start()
+    thread2.start()
+    thread1.join()
+    thread2.join()
+
+from scapy.sendrecv import send, sniff
+def private_listener():
+    print("sniffing packets on the private interface")
+    sniff(prn=process_pkt_private, iface=PRIVATE_IFACE, filter="icmp or tcp")
