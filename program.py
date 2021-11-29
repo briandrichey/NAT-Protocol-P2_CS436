@@ -50,5 +50,13 @@ def process_pkt_private(pkt: Packet):
 #ping[172.16.20.100] tests client 1 and 2
 
 
+def process_pkt_public(pkt: Packet):
+    if pkt.sniffed_on == PUBLIC_IFACE:
+        print("received public pkt", pkt.sniffed_on, pkt.summary())
+        if  in pkt:
+            # Create a new IP packet with specified src and dst
+            new_pkt = IP(src="???", dst="???") / pkt[ICMP]
+            # Send the new packet over the public interface
+            send(new_pkt, iface=PRIVATE_IFACE, verbose=False)
 
 
