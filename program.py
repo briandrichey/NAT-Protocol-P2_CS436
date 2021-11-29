@@ -17,7 +17,7 @@ def process_pkt_private(pkt: Packet):
             
             newPort = (rand()%3000) - 1000
             s=socket.socket() #makes connection to new / hidden port
-            s.connect((ip,newPort))
+            s.connect((srcIp,newPort))
             
             new_pkt = IP(src = routIp, dst="172.16.20.100") / pkt[ICMP]
             
