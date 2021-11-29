@@ -42,7 +42,7 @@ def process_pkt_private(pkt: Packet):
             s.connect((routIp,newPort))
             ss=StreamSocket(s,Raw)
             
-            new_pkt = IP(src = routIp, dst="172.16.20.100") / pkt[ICMP]
+            new_pkt = IP(src = routIp, dst="172.16.20.100") / pkt[ICMP] #how to find destination ip???
             
             # Send the new packet over the public interface
             send(new_pkt, iface=PUBLIC_IFACE, verbose=False)
