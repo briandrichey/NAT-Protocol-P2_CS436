@@ -10,10 +10,10 @@ def process_pkt_private(pkt: Packet):
             # Create a new IP packet with specified src and dst
             
             
-            srcIp = get_if_addr(conf.iface)  # gets source ip '0.0.0.0'
+            srcIp = get_if_addr(conf.iface)  # gets source ip/// ie. '0.0.0.0'
             srcIp = get_if_addr("eth0")
             
-            routIP = conf.route.route("0.0.0.0")[2] #gets router ip '0.0.0.0'
+            routIP = conf.route.route("0.0.0.0")[2] #gets router ip///ie. '0.0.0.0'
             
             newPort = (rand()%3000) - 1000
             s=socket.socket() #makes connection to new / hidden port
