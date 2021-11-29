@@ -7,11 +7,16 @@ def process_pkt_private(pkt: Packet):
         if ICMP in pkt:
             # Create a new IP packet with specified src and dst
             newPort = (rand()%3000) - 1000
-            ip = get_if_addr(conf.iface)  # default interface
-            ip = get_if_addr("eth0")
-           s=socket.socket()
-           s.connect((ip,newPort))
-           new_pkt = IP(src="172.16.20.2", dst="172.16.20.100") / pkt[ICMP]
+            
+            srcIp = get_if_addr(conf.iface)  # default interface
+            srcIp = get_if_addr("eth0")
+            
+            routIP = conf.route.route("0.0.0.0")[2]
+            
+            s=socket.socket()
+            s.connect((ip,newPort))
+            
+            new_pkt = IP(src = routIp, dst="172.16.20.100") / pkt[ICMP]
             # Send the new packet over the public interface
             send(new_pkt, iface=PUBLIC_IFACE, verbose=False)
             
