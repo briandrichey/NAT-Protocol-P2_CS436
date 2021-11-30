@@ -23,6 +23,7 @@ from scapy.packet import Packet
 from scapy.layers.inet import TCP, IP, Ether, ICMP
 from random import seed
 from random import randint
+from socket import *
 
 def process_pkt_private(pkt: Packet):
     if pkt.sniffed_on == PRIVATE_IFACE:
