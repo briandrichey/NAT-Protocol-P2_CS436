@@ -18,7 +18,8 @@ pubIpMap = {} #dictionary key:srcIp, val: dstIp
 clientIcmpIdPortMap = {} #dictionary key:client srcId, val: port number (randomly generated 2000-2250) 
 clientTcpIpPortMap = {} #dictionary key:client srcIp, val: port number (randomly generated 2250-2500) 
 
-routIP = conf.route.route("0.0.0.0")[2] #gets router ip///ie. '0.0.0.0'
+routPvtIP = "10.0.0.2"
+routPubIP = "172.16.20.2"
 
         
 def process_pkt_private(pkt: Packet):
@@ -48,13 +49,14 @@ def process_pkt_private(pkt: Packet):
             s.connect((routIp,newPort))
             ss=StreamSocket(s,Raw)
            
-            new_pkt = IP(src = routIp, dst = pvtIpMap[str(srcIp)]) / pkt[ICMP] #src is now router dest via pvtIpMap
+            newIcmpPkt = IP(src = routPubIp, dst = pvtIpMap[str(srcIp)]) / pkt[ICMP] #src is now router dest via pvtIpMap
             
             # Send the new packet over the public interface
-            send(new_pkt, iface=PUBLIC_IFACE, verbose=False)
+            send(newIcmpPkt, iface=PUBLIC_IFACE, verbose=False)
             
-        elif (TCP in pkt and IP not in clientTcpIpPortMap):
+        if (TCP in pkt and IP not in clientTcpIpPortMap):#TCP not mapped then create port connection and send
             
+            seed(1)
             newPort = randint(2250, 2500) #chooses port in 2250-2500 range
             clientTcpIpPortMap[str(srcIp)] = newPort #records clients port number via srcIP key in dictionary
             
@@ -62,19 +64,24 @@ def process_pkt_private(pkt: Packet):
             s.connect((routIp,newPort))
             ss=StreamSocket(s,Raw)
             
-            tcpPkt = IP(src = srcIP , dst = pvtIpMap[str(srcIp)])/TCP(dstPort = clientTcpIpPortMap[str(srcIp)]
+            newTcpPkt = IP(src = routPubIp , dst = pvtIpMap[str(srcIp)])/TCP(dstPort = clientTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+            send(newTcpPkt, iface = PUBLIC_IFACE, verbose=False) # sends new TCP pkt publicly
             
-           
-
+        else: #TCP mapped
+            newTcpPkt = IP(src = routPubIp , dst = pvtIpMap[str(srcIp)])/TCP(dstPort = clientTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+            send(newTcpPkt, iface = PUBLIC_IFACE, verbose=False) # sends new TCP pkt publicly
+            
 
 def process_pkt_public(pkt: Packet):
     if pkt.sniffed_on == PUBLIC_IFACE:
         print("received public pkt", pkt.sniffed_on, pkt.summary())
-        if  in pkt:
+        if ICMP in pkt:
             # Create a new IP packet with specified src and dst
             new_pkt = IP(src="???", dst="???") / pkt[ICMP]
             # Send the new packet over the public interface
             send(new_pkt, iface=PRIVATE_IFACE, verbose=False)
+            
+        if TCP in pkt:
 
 
 def private_listener():
