@@ -54,6 +54,12 @@ def process_pkt_private(pkt: Packet):
             # Send the new packet over the public interface
             send(newIcmpPkt, iface=PUBLIC_IFACE, verbose=False)
             
+        elif(:
+            newIcmpPkt = IP(src = routPubIp, dst = pvtIpMap[str(srcIp)]) / pkt[ICMP] #src is now router dest via pvtIpMap
+            
+            # Send the new packet over the public interface
+            send(newIcmpPkt, iface=PUBLIC_IFACE, verbose=False)
+            
         if (TCP in pkt and IP not in clientTcpIpPortMap):#TCP not mapped then create port connection and send
             
             seed(1)
