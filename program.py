@@ -30,11 +30,15 @@ def process_pkt_private(pkt: Packet):
         if (IP in pkt and IP not in pvtIpMap):
             srcIp = pkt[IP].src  # gets source and destination ip/// ie. '0.0.0.0'
             dstIp = pkt[IP].dst
-            pvtIpMap[str(srcIp)] = str(dstIp) #adds src and dst ips to dictionary 
+            pvtIpMap[str(srcIp)] = str(dstIp) #adds src and dst ips to dictionary
+            print("pvt pkt:")
+            pkt.show() 
             
-        elif(IP in pkt and IP in pvtIpMap): #already been mapped
+        if(IP in pkt and IP in pvtIpMap): #already been mapped
             srcIp = pkt[IP].src #if in dictionary lookup dest IP
-            dstIp = pvtIpMap[str(srcIp)] 
+            dstIp = pvtIpMap[str(srcIp)]
+            print("pvt pkt:")
+            pkt.show()  
         else: 
             pass
             
@@ -45,16 +49,25 @@ def process_pkt_private(pkt: Packet):
             srcIp = pkt[IP].src
             pvtIcmpMap[str(srcIp)] = str(srcId) #adds ICMP Id to ICMP private dictionary connecting ICMP id to src IP
            
-            newPubIcmpPkt = IP(src = routPubIP, dst = pvtIpMap[str(srcIp)]) / pkt[pvtIcmpMap[str(srcIp)]] #src is now router dest via pvtIpMap
-            
+            newPubIcmpPkt = IP(src = routPubIP, dst = pvtIpMap[str(srcIp)]) / pkt[ICMP] #src is now router dest via pvtIpMap
+            newPubIcmpPkt[ICMP].id = pvtIcmpMap[str(srcIp)]#**********
+            print("new pub ICMP pkt:")
+            newPubIcmpPkt.show()
             # Send the new packet over the public interface
             send(newIcmpPkt, iface=PUBLIC_IFACE, verbose=False)
+            print("new pub ICMP pkt:")
+            newPubIcmpPkt.show()
             
-        elif(ICMP in pkt and pkt[ICMP].id in pvtIcmpMap):
+        if(ICMP in pkt and pkt[ICMP].id in pvtIcmpMap):
+            srcId = pkt[ICMP].id 
+            srcIp = pkt[IP].src
             newPubIcmpPkt = IP(src = routPubIP, dst = pvtIpMap[str(srcIp)]) / pkt[pvtIcmpMap[str(srcIp)]] #src is now router dest via pvtIpMap
-            
+            print("new pub ICMP pkt:")
+            newPubIcmpPkt.show()
             # Send the new packet over the public interface
             send(newPubIcmpPkt, iface=PUBLIC_IFACE, verbose=False)
+            print("new pub ICMP pkt:")
+            newPubIcmpPkt.show()
         else: 
             pass
             
@@ -64,13 +77,29 @@ def process_pkt_private(pkt: Packet):
             newPort = randint(2250, 2500) #chooses port in 2250-2500 range
             clientTcpIpPortMap[str(srcIp)] = newPort #records clients port number via srcIP key in dictionary
             
+            TcpDst = pvtIpMap[str(srcIp)]
             
-            newPubTcpPkt = IP(src = routPubIP , dst = pvtIpMap[str(srcIp)])/TCP(clientTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+            TcpPort = clientTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
+
+            newPubTcpPkt = IP(src = routPubIP , dst = TcpDst)/TCP(TcpPort) #uses separate tables to gather address info
+            print("new pub TCP pkt:")
+            newPubTcpPkt.show()
             send(newPubTcpPkt, iface = PUBLIC_IFACE, verbose=False) # sends new TCP pkt publicly
             
-        elif(TCP in pkt and IP in clientTcpIpPortMap): #TCP mapped
-            newPubTcpPkt = IP(src = routPubIP , dst = pvtIpMap[str(srcIp)])/TCP(clientTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+            
+        if(TCP in pkt and IP in clientTcpIpPortMap): #TCP mapped
+
+            TcpDst = pvtIpMap[str(srcIp)]
+            print(TcpDst)
+            TcpPort = clientTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
+
+            newPubTcpPkt = IP(src = routPubIP , dst = TcpDst)/TCP(TcpPort) #uses separate tables to gather address info
+            print("new pvt TCP pkt:")
+            newPubTcpPkt.show()
             send(newPubTcpPkt, iface = PUBLIC_IFACE, verbose=False) # sends new TCP pkt publicly
+            
         else: 
             pass
 
@@ -83,10 +112,14 @@ def process_pkt_public(pkt: Packet):
             srcIp = pkt[IP].src  # gets source and destination ip/// ie. '0.0.0.0'
             dstIp = pkt[IP].dst
             pubIpMap[str(srcIp)] = str(dstIp) #adds src and dst ips to dictionary 
+            print("pub pkt:")
+            pkt.show() 
             
-        elif(IP in pkt and IP in pubIpMap):
+        if(IP in pkt and IP in pubIpMap):
             srcIp = pkt[IP].src #if in dictionary lookup dest IP
             dstIp = pubIpMap[str(srcIp)] 
+            print("pub pkt:")
+            pkt.show() 
         else: 
             pass
             
@@ -95,15 +128,30 @@ def process_pkt_public(pkt: Packet):
             srcIp = pkt[IP].src
             pubIcmpMap[str(srcId)] = str(srcIp) #adds ICMP Id to ICMP public dictionary connecting ICMP id to src IP
            
-           
-            newPvtIcmpPkt = IP(src = srcIp, dst = pubIpMap[str(srcIp)]) / pkt[pubIcmpMap[str(srcIp)]] #src is now router dest via pubIpMap
+            IcmpDst = pubIpMap[str(srcIp)]
+            print(TcpDst)
+            IcmpId = serverTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
             
+
+            newPvtIcmpPkt = IP(src = srcIp, dst = IcmpDst) / pkt[IcmpId] #src is now router dest via pubIpMap
+            print("new pvt ICMP pkt:")
+            newPvtIcmpPkt.show()
             # Send the new packet over the private interface
             send(newPvtIcmpPkt, iface=PRIVATE_IFACE, verbose=False)
             
-        elif(ICMP in pkt and pkt[ICMP].id in pubIcmpMap):
-            newPvtIcmpPkt = IP(src = srcIP, dst = pubIpMap[str(srcIp)]) / pkt[pubIcmpMap[str(srcIp)]] #src is now router dest via pubIpMap
+        if(ICMP in pkt and pkt[ICMP].id in pubIcmpMap):
+            srcId = pkt[ICMP].id 
+            srcIp = pkt[IP].src
+            IcmpDst = pubIpMap[str(srcIp)]
+            print(TcpDst)
+            IcmpId = serverTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
             
+
+            newPvtIcmpPkt = IP(src = srcIp, dst = IcmpDst) / pkt[IcmpId] #src is now router dest via pubIpMap
+            print("new pvt ICMP pkt:")
+            newPvtIcmpPkt.show()
             # Send the new packet over the private interface
             send(newPubIcmpPkt, iface=PRIVATE_IFACE, verbose=False)
         else: 
@@ -113,13 +161,28 @@ def process_pkt_public(pkt: Packet):
             seed(1)
             newPort = randint(2750, 2999) #chooses port in 2750-2999 range
             serverTcpIpPortMap[str(srcIp)] = newPort #records server's port number via srcIP key in dictionary
+
+            TcpDst = pubIpMap[str(srcIp)]
+            print(TcpDst)
+            TcpPort = serverTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
             
             
-            newPvtTcpPkt = IP(src = srcIp , dst = pubIpMap[str(srcIp)])/TCP(serverTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+            newPvtTcpPkt = IP(src = srcIp , dst = TcpDst)/TCP(TcpPort]) #uses separate tables to gather address info
+            print("new pvt TCP pkt:")
+            newPvtTcpPkt.show()
             send(newPvtTcpPkt, iface = PRIVATE_IFACE, verbose=False) # sends new TCP pkt privately
             
-        elif(TCP in pkt and IP in clientTcpIpPortMap): #TCP mapped
-            newPvtTcpPkt = IP(src = srcIp , dst = pubIpMap[str(srcIp)])/TCP(serverTcpIpPortMap[str(srcIp)]) #uses separate tables to gather address info
+        if(TCP in pkt and IP in clientTcpIpPortMap): #TCP mapped
+             TcpDst = pubIpMap[str(srcIp)]
+            print(TcpDst)
+            TcpPort = serverTcpIpPortMap[str(srcIp)]
+            print(TcpPort)
+            
+            
+            newPvtTcpPkt = IP(src = srcIp , dst = TcpDst)/TCP(TcpPort]) #uses separate tables to gather address info
+            print("new pvt TCP pkt:")
+            newPvtTcpPkt.show()
             send(newPvtTcpPkt, iface = PRIVATE_IFACE, verbose=False) # sends new TCP pkt privately
         else: 
             pass
